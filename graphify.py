@@ -38,33 +38,33 @@ def parse_dir(path):
 		for file in files:
 			if file[-4:] != '.cpp':
 				continue
-			metadata = parse_file(root + os.sep + file)
+			metadata = parse_file(root + os.sep + file, False)
 			if metadata == {}:
 				continue
 			result[metadata['name']] = metadata
 		for file in files:
 			if file[-2:] != '.h':
 				continue
-			metadata = parse_file(root + os.sep + file)
+			metadata = parse_file(root + os.sep + file, True)
 			if metadata == {}:
 				continue
 			key = metadata['name']
 			if key in result:
-				metadata['includes'] += result[key]['includes']
+				metadata['cpp_includes'] += result[key]['cpp_includes']
 			else:
 				metadata['header_only'] = True
 			result[metadata['name']] = metadata
 	return result
 
-def parse_file(path):
-
+def parse_file(path, is_header):
 	if not is_in_git_repository(path):
 		return {}
 
 	result = {
 		'name': os.path.splitext(os.path.basename(path))[0],
 		'desc': '',
-		'includes': [],
+		'header_includes': [],
+		'cpp_includes': [],
 		'entry_point': False,
 		'header_only': False
 	}
@@ -83,7 +83,10 @@ def parse_file(path):
 					if line[1:10] == 'include "' and '.' in line:
 						included_file = os.path.basename(line[10:-3])
 						if included_file != result['name']:
-							result['includes'].append(included_file)
+							if is_header:
+								result['header_includes'].append(included_file)
+							else:
+								result['cpp_includes'].append(included_file)
 				if line[1:4] == ' /*':
 					parsing_description = True
 			else:
@@ -107,8 +110,10 @@ def files_to_graph(files):
 		if file['header_only']:
 			result += ' color=blue'
 		result += '];\n'
-		for include in file['includes']:
+		for include in file['header_includes']:
 			result += '\t' + name + ' -- ' + include + ';\n'
+		for include in file['cpp_includes']:
+			result += '\t' + name + ' -- ' + include + ' [color=gray];\n'
 	pass
 	result += '}'
 	return pydot.graph_from_dot_data(result)[0]
