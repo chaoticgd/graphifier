@@ -41,19 +41,19 @@ def parse_dir(path):
 			metadata = parse_file(root + os.sep + file)
 			if metadata == {}:
 				continue
-			result[metadata['name'][:-4]] = metadata
+			result[metadata['name']] = metadata
 		for file in files:
 			if file[-2:] != '.h':
 				continue
 			metadata = parse_file(root + os.sep + file)
 			if metadata == {}:
 				continue
-			key = metadata['name'][:-2]
+			key = metadata['name']
 			if key in result:
 				metadata['includes'] += result[key]['includes']
 			else:
 				metadata['header_only'] = True
-			result[metadata['name'][:-2]] = metadata
+			result[metadata['name']] = metadata
 	return result
 
 def parse_file(path):
@@ -62,7 +62,7 @@ def parse_file(path):
 		return {}
 
 	result = {
-		'name': os.path.basename(path),
+		'name': os.path.splitext(os.path.basename(path))[0],
 		'desc': '',
 		'includes': [],
 		'entry_point': False,
@@ -80,9 +80,10 @@ def parse_file(path):
 				if line[0] != '#':
 					continue
 				if len(line) > 9:
-					if line[1:10] == 'include "':
+					if line[1:10] == 'include "' and '.' in line:
 						included_file = os.path.basename(line[10:-3])
-						result['includes'].append(included_file)
+						if included_file != result['name']:
+							result['includes'].append(included_file)
 				if line[1:4] == ' /*':
 					parsing_description = True
 			else:
