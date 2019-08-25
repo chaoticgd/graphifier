@@ -98,9 +98,9 @@ def files_to_graph(files):
 	for name, file in files.items():
 		text = name
 		if file['desc'] != '':
-			text += ': ' + file['desc'].strip().replace('\n', '\\n')
+			text += ': ' + file['desc'].strip()
 		result += '\t' + name + ' ['
-		result += 'label="' + text + '"'
+		result += 'label="' + split_lines(text) + '"'
 		if file['entry_point']:
 			result += ' color=red'
 		if file['header_only']:
@@ -111,6 +111,19 @@ def files_to_graph(files):
 	pass
 	result += '}'
 	return pydot.graph_from_dot_data(result)[0]
+
+def split_lines(desc):
+	out_line = ''
+	out_word = ''
+	count = 0
+	for word in desc.replace('\n', ' ').split(' '):
+		count += len(word)
+		if count > 20:
+			out_line += out_word + '\n'
+			out_word = ''
+			count = 0
+		out_word += word + ' '
+	return out_line + out_word
 
 dev_null = open(os.devnull, 'w')
 
